@@ -2,7 +2,6 @@
 <html>
 <head>
     <title>Stock Intelligence Dashboard</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
@@ -108,40 +107,6 @@
             border-radius: 12px;
             padding: 10px;
         }
-/* 📱 MOBILE RESPONSIVE */
-@media (max-width: 768px) {
-
-    .container {
-        grid-template-columns: 1fr;  /* stack layout */
-	padding: 10px;
-    }
-
-    .sidebar {
-        width: 100%;
-    }
-
-    .metrics {
-        flex-direction: column; /* stack cards */
-    }
-
-    .metric-box {
-        width: 100%;
-    }
-
-    select, button {
-        width: 100%;
-    }
-
-    header {
-        text-align: center;
-        font-size: 18px;
-    }
-
-    canvas {
-        width: 100% !important;
-        height: 300px !important;
-    }
-}
     </style>
 </head>
 
@@ -275,8 +240,6 @@ async function loadData() {
         },
         options: {
             plugins: {
-		responsive: true,
-    		maintainAspectRatio: false,
                 legend: {
                     labels: { color: "#cbd5f5" }
                 }
