@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stock Intelligence Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+
+        header {
+            background: #020617;
+            padding: 15px 30px;
+            font-size: 22px;
+            font-weight: bold;
+            color: #38bdf8;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .sidebar {
+            background: #020617;
+            padding: 20px;
+            border-radius: 14px;
+        }
+
+        .main {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        select, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 6px;
+            border: none;
+        }
+
+        select {
+            background: #1e293b;
+            color: #e2e8f0;
+        }
+
+        button {
+            background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+            color: black;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .card {
+            background: #020617;
+            padding: 20px;
+            border-radius: 14px;
+        }
+
+        .metrics {
+            display: flex;
+            gap: 15px;
+        }
+
+        .metric-box {
+            flex: 1;
+            padding: 18px;
+            border-radius: 12px;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .metric-box:nth-child(1) {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+        }
+
+        .metric-box:nth-child(2) {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+        }
+
+        .metric-box:nth-child(3) {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+
+        .badge {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+
+        .buy { background: #16a34a; }
+        .sell { background: #dc2626; }
+        .hold { background: #eab308; color: black; }
+
+        /* 🔥 Lighter chart */
+        canvas {
+            background: #0b1220;
+            border-radius: 12px;
+            padding: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>📊 Stock Intelligence Dashboard</header>
+
+<div class="container">
+
+    <div class="sidebar">
+        <h3>Select Options</h3>
+
+        <select id="companySelect"></select>
+
+        <select id="rangeSelect">
+            <option value="30">Last 30 Days</option>
+            <option value="90">Last 90 Days</option>
+        </select>
+
+        <select id="compareSelect">
+            <option value="">Compare Stock</option>
+        </select>
+
+        <button onclick="loadData()">Analyze</button>
+    </div>
+
+    <div class="main">
+
+        <div class="metrics">
+            <div class="metric-box">
+                Signal
+                <div id="signalBox"></div>
+            </div>
+
+            <div class="metric-box">
+                Volatility
+                <div id="volBox"></div>
+            </div>
+
+            <div class="metric-box">
+                Prediction
+                <div id="predictionBox"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <canvas id="chart"></canvas>
+        </div>
+
+    </div>
+</div>
+
+<script>
+const API = "http://127.0.0.1:8000";
+let chart;
+
+async function loadCompanies() {
+    const res = await fetch(`${API}/companies`);
+    const data = await res.json();
+
+    const select = document.getElementById("companySelect");
+    const compare = document.getElementById("compareSelect");
+
+    data.companies.forEach(c => {
+        select.add(new Option(c, c));
+        compare.add(new Option(c, c));
+    });
+}
+
+async function loadData() {
+    const symbol = document.getElementById("companySelect").value;
+    const range = document.getElementById("rangeSelect").value;
+    const compareSymbol = document.getElementById("compareSelect").value;
+
+    let res = await fetch(`${API}/data/${symbol}`);
+    let data = await res.json();
+
+    data = data.slice(-range);
+
+    const labels = data.map(d => d.Date.split("T")[0]);
+    const prices = data.map(d => d.Close);
+
+    let datasets = [
+        {
+            label: symbol,
+            data: prices,
+            borderColor: "#60a5fa",
+            borderWidth: 2,
+            tension: 0.3
+        }
+    ];
+
+    // Compare stock
+    if (compareSymbol && compareSymbol !== symbol) {
+        let res2 = await fetch(`${API}/data/${compareSymbol}`);
+        let data2 = await res2.json();
+
+        data2 = data2.slice(-range);
+
+        const prices2 = data2.map(d => d.Close);
+
+        datasets.push({
+            label: compareSymbol,
+            data: prices2,
+            borderColor: "#4ade80",
+            borderWidth: 2,
+            tension: 0.3
+        });
+    }
+
+    // Prediction
+    const predRes = await fetch(`${API}/predict/${symbol}`);
+    const pred = await predRes.json();
+
+    datasets.push({
+        label: "Prediction",
+        data: [...prices, pred.predicted_price],
+        borderColor: "#f87171",
+        borderDash: [5,5]
+    });
+
+    const ctx = document.getElementById("chart").getContext("2d");
+
+    if (chart) chart.destroy();
+
+    chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [...labels, "Next"],
+            datasets: datasets
+        },
+        options: {
+            plugins: {
+                legend: {
+                    labels: { color: "#cbd5f5" }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: "#94a3b8" },
+                    grid: { color: "rgba(255,255,255,0.08)" }
+                },
+                y: {
+                    ticks: { color: "#94a3b8" },
+                    grid: { color: "rgba(255,255,255,0.08)" }
+                }
+            }
+        }
+    });
+
+    const insightRes = await fetch(`${API}/insights/${symbol}`);
+    const insight = await insightRes.json();
+
+    let badgeClass = "hold";
+    if (insight.signal === "BUY") badgeClass = "buy";
+    else if (insight.signal === "SELL") badgeClass = "sell";
+
+    document.getElementById("signalBox").innerHTML =
+        `<span class="badge ${badgeClass}">${insight.signal}</span>`;
+
+    document.getElementById("volBox").innerHTML =
+        `${insight.volatility_score.toFixed(4)}`;
+
+    document.getElementById("predictionBox").innerHTML =
+        `₹${pred.predicted_price.toFixed(2)}`;
+}
+
+loadCompanies();
+</script>
+
+</body>
+</html>
