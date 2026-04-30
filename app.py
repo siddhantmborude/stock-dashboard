@@ -4,6 +4,8 @@ from services.insight_service import get_insights
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware  
 from services.ml_service import predict_price
+from fastapi.responses import FileResponse
+
 
 
 app = FastAPI()
@@ -20,7 +22,7 @@ COMPANIES = ["TCS", "INFY", "RELIANCE"]
 
 @app.get("/")
 def home():
-    return {"message": "Stock Intelligence API Running 🚀"}
+    return FileResponse("index.html")
 
 
 
