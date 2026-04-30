@@ -145,7 +145,7 @@ stock-dashboard/
 ### 1. Clone repository
 
 ```bash
-git clone https://github.com/your-username/stock-dashboard.git
+git clone https://github.com/siddhantmborude/stock-dashboard.git
 cd stock-dashboard
 ```
 
@@ -176,7 +176,7 @@ uvicorn app:app --reload
 
 ## 🌐 Live Demo
 
-👉 https://your-app.onrender.com
+👉 https://stock-dashboard-vsl1.onrender.com
 
 ---
 
@@ -210,15 +210,9 @@ uvicorn app:app --reload
 
 ---
 
-## 📸 Screenshots
-
-(Add screenshots of your UI here)
-
----
-
 ## 👨‍💻 Author
 
-* Siddhant Borude
+Siddhant Borude
 
 ---
 
