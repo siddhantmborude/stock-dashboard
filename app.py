@@ -43,9 +43,7 @@ def get_data(symbol: str, days: int = 30):
     if df is None or df.empty:
         return []
 
-    data = df.tail(days).to_dict(orient="records")
-    print(type(data))
-    return data
+    return df.tail(days).to_dict(orient="records")
 	
 
 # 3. Summary
@@ -53,24 +51,42 @@ def get_data(symbol: str, days: int = 30):
 def get_summary(symbol: str):
     df = fetch_stock_data(symbol)
 
-    return {"symbol": symbol,"52w_high": float(df['Close'].max()),"52w_low": float(df['Close'].min()),"avg_close": float(df['Close'].mean())}
+    if df is None or df.empty:
+        return {"symbol": symbol, "52w_high": 0, "52w_low": 0, "avg_close": 0}
 
+    return {
+        "symbol": symbol,
+        "52w_high": float(df['Close'].max()),
+        "52w_low": float(df['Close'].min()),
+        "avg_close": float(df['Close'].mean())
+    }
 
 # 4. Insights (YOUR SPECIAL FEATURE 🔥)
 @app.get("/insights/{symbol}")
 def insights(symbol: str):
     df = fetch_stock_data(symbol)
 
-    return get_insights(df, symbol)
+    if df is None or df.empty:
+        return {"signal": "HOLD", "volatility_score": 0}
+
+    try:
+        return get_insights(df, symbol)
+    except Exception as e:
+        print("INSIGHTS ERROR:", e)
+        return {"signal": "HOLD", "volatility_score": 0}
 
 @app.get("/predict/{symbol}")
 def predict(symbol: str):
     df = fetch_stock_data(symbol)
 
-    if df.empty:
+    if df is None or df.empty:
         return {"symbol": symbol, "predicted_price": 0}
 
-    predicted_price = predict_price(df)
+    try:
+        predicted_price = predict_price(df)
+    except Exception as e:
+        print("PREDICT ERROR:", e)
+        predicted_price = 0
 
     return {
         "symbol": symbol,
@@ -88,3 +104,12 @@ def compare(symbol1: str, symbol2: str):
         symbol1: float(df1['Close'].iloc[-1]),
         symbol2: float(df2['Close'].iloc[-1])
     }
+
+from fastapi import Request
+import traceback
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    print("🔥 FULL ERROR:")
+    traceback.print_exc()
+    return {"error": str(exc)}

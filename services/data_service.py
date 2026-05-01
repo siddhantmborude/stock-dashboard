@@ -3,27 +3,32 @@ import pandas as pd
 import datetime
 
 def fetch_stock_data(symbol: str):
+    try:
+        end = datetime.datetime.today()
+        start = end - datetime.timedelta(days=365)
 
-    end = datetime.datetime.today()
-    start = end - datetime.timedelta(days=365)
+        df = yf.download(symbol + ".NS", start=start, end=end)
 
-    df = yf.download(symbol + ".NS", start=start, end=end)
+        if df is None or df.empty:
+            return pd.DataFrame()
 
-    if df.empty:
-        return pd.DataFrame(columns=["Date", "Open", "Close"])
+        # 🔥 Fix MultiIndex
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(0)
 
-    df.reset_index(inplace=True)
+        df = df.reset_index()
 
-    df = df[['Date', 'Open', 'Close']]
+        df = df[['Date', 'Open', 'Close']]
 
-    df = df.dropna()
+        # ✅ ADD THESE (VERY IMPORTANT)
+        df['Daily Return'] = df['Close'].pct_change()
+        df['MA7'] = df['Close'].rolling(7).mean()
 
-    df['Daily Return'] = (df['Close'] - df['Open']) / df['Open']
-    df['MA7'] = df['Close'].rolling(window=7).mean()
+        # ✅ Clean data properly
+        df = df.dropna()
 
-    df['52W_High'] = df['Close'].rolling(window=252).max()
-    df['52W_Low'] = df['Close'].rolling(window=252).min()
+        return df
 
-    df = df.fillna(0)
-
-    return df
+    except Exception as e:
+        print("ERROR:", e)
+        return pd.DataFrame()
