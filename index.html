@@ -160,7 +160,7 @@
 </div>
 
 <script>
-const API = "https://stock-dashboard-vsl1.onrender.com";
+const API = "http://127.0.0.1:8000";
 let chart;
 
 async function loadCompanies() {
@@ -176,15 +176,20 @@ async function loadCompanies() {
     });
 }
 
+
 async function loadData() {
     const symbol = document.getElementById("companySelect").value;
-    const range = document.getElementById("rangeSelect").value;
+    const range = parseInt(document.getElementById("rangeSelect").value);
     const compareSymbol = document.getElementById("compareSelect").value;
 
-    let res = await fetch(`${API}/data/${symbol}`);
+    // 📊 Fetch data FIRST
+    let res = await fetch(`${API}/data/${symbol}?days=${range}`);
     let data = await res.json();
 
-    data = data.slice(-range);
+    // ✅ SORT properly (VERY IMPORTANT)
+    data.sort((a, b) => new Date(a.Date) - new Date(b.Date));
+
+	
 
     const labels = data.map(d => d.Date.split("T")[0]);
     const prices = data.map(d => d.Close);
@@ -199,11 +204,12 @@ async function loadData() {
         }
     ];
 
-    // Compare stock
+    // 🔁 Compare stock (FIXED same issue)
     if (compareSymbol && compareSymbol !== symbol) {
-        let res2 = await fetch(`${API}/data/${compareSymbol}`);
+        let res2 = await fetch(`${API}/data/${compareSymbol}?days=${range}`);
         let data2 = await res2.json();
 
+        data2.sort((a, b) => new Date(a.Date) - new Date(b.Date));
         data2 = data2.slice(-range);
 
         const prices2 = data2.map(d => d.Close);
@@ -217,7 +223,7 @@ async function loadData() {
         });
     }
 
-    // Prediction
+    // 🤖 Prediction
     const predRes = await fetch(`${API}/predict/${symbol}`);
     const pred = await predRes.json();
 
@@ -257,6 +263,7 @@ async function loadData() {
         }
     });
 
+    // 🔥 Insights
     const insightRes = await fetch(`${API}/insights/${symbol}`);
     const insight = await insightRes.json();
 

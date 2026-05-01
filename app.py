@@ -36,26 +36,24 @@ def get_companies():
     return {"companies": COMPANIES}
 
 
-# 2. Last 30 days data
 @app.get("/data/{symbol}")
-def get_data(symbol: str):
+def get_data(symbol: str, days: int = 30):
     df = fetch_stock_data(symbol)
-    df = df.tail(30)
 
-    return df.to_dict(orient="records")
+    if df is None or df.empty:
+        return []
 
+    data = df.tail(days).to_dict(orient="records")
+    print(type(data))
+    return data
+	
 
 # 3. Summary
 @app.get("/summary/{symbol}")
 def get_summary(symbol: str):
     df = fetch_stock_data(symbol)
 
-    return {
-        "symbol": symbol,
-        "52w_high": float(df['Close'].max()),
-        "52w_low": float(df['Close'].min()),
-        "avg_close": float(df['Close'].mean())
-    }
+    return {"symbol": symbol,"52w_high": float(df['Close'].max()),"52w_low": float(df['Close'].min()),"avg_close": float(df['Close'].mean())}
 
 
 # 4. Insights (YOUR SPECIAL FEATURE 🔥)
@@ -68,6 +66,10 @@ def insights(symbol: str):
 @app.get("/predict/{symbol}")
 def predict(symbol: str):
     df = fetch_stock_data(symbol)
+
+    if df.empty:
+        return {"symbol": symbol, "predicted_price": 0}
+
     predicted_price = predict_price(df)
 
     return {
