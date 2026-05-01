@@ -12,7 +12,6 @@ def fetch_stock_data(symbol: str):
         if df is None or df.empty:
             return pd.DataFrame()
 
-        # 🔥 Fix MultiIndex
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.get_level_values(0)
 
@@ -20,15 +19,26 @@ def fetch_stock_data(symbol: str):
 
         df = df[['Date', 'Open', 'Close']]
 
-        # ✅ ADD THESE (VERY IMPORTANT)
-        df['Daily Return'] = df['Close'].pct_change()
+        # ✅ Metrics
+        df['Daily Return'] = (df['Close'] - df['Open']) / df['Open']
         df['MA7'] = df['Close'].rolling(7).mean()
+        df['52W_High'] = df['Close'].expanding().max()
+        df['52W_Low'] = df['Close'].expanding().min()
 
-        # ✅ Clean data properly
-        df = df.dropna()
+        # Keep valid rows
+        df = df.dropna(subset=['Open', 'Close'])
+
+        # Fill indicators
+        df['MA7'] = df['MA7'].bfill()
+        df['52W_High'] = df['52W_High'].bfill()
+        df['52W_Low'] = df['52W_Low'].bfill()
+
+        # 🔥 CRITICAL FIX (JSON ERROR)
+        df = df.replace([float('inf'), -float('inf')], 0)
+        df = df.fillna(0)
 
         return df
 
     except Exception as e:
-        print("ERROR:", e)
+        print("DATA ERROR:", e)
         return pd.DataFrame()

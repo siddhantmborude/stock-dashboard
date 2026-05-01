@@ -23,6 +23,8 @@
             font-weight: bold;
         }
 
+	
+
         .container {
             display: grid;
             grid-template-columns: 260px 1fr;
@@ -172,10 +174,24 @@
     <div class="main">
 
         <div class="metrics">
+
+		<div class="card">
+    <h4>📉 52W High</h4>
+    <div id="highBox">--</div>
+</div>
+
+<div class="card">
+    <h4>📈 52W Low</h4>
+    <div id="lowBox">--</div>
+</div>
             <div class="card signal-card">
                 <h4>📈 Signal</h4>
                 <div id="signalBox">--</div>
             </div>
+		<div class="card">
+    <h4>📉 Daily Return</h4>
+    <div id="returnBox">--</div>
+</div>
 
             <div class="card volatility-card">
                 <h4>📊 Volatility</h4>
@@ -279,6 +295,13 @@ async function loadSelectedStock() {
         borderColor: "#f87171",
         borderDash: [5,5]
     });
+	datasets.push({
+    label: "MA7",
+    data: data.map(d => d.MA7),
+    borderColor: "#facc15",
+    borderDash: [4,4],
+    tension: 0.3
+});
 
     if (chart) chart.destroy();
 
@@ -296,6 +319,18 @@ async function loadSelectedStock() {
     if (insight.signal === "BUY") color = "#22c55e";
     if (insight.signal === "SELL") color = "#ef4444";
 
+const last = data[data.length - 1];
+
+document.getElementById("highBox").innerHTML =
+    (last["52W_High"] !== undefined && last["52W_High"] !== null)
+        ? `₹${last["52W_High"].toFixed(2)}`
+        : "--";
+
+document.getElementById("lowBox").innerHTML =
+    (last["52W_Low"] !== undefined && last["52W_Low"] !== null)
+        ? `₹${last["52W_Low"].toFixed(2)}`
+        : "--";
+
     document.getElementById("signalBox").innerHTML =
         `<span style="color:${color}">${insight.signal}</span>`;
 
@@ -304,6 +339,8 @@ async function loadSelectedStock() {
 
     document.getElementById("predictionBox").innerHTML =
         `₹${pred.predicted_price.toFixed(2)}`;
+	document.getElementById("returnBox").innerHTML =
+    `${(last["Daily Return"] * 100).toFixed(2)}%`;
 }
 </script>
 
