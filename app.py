@@ -5,7 +5,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware  
 from services.ml_service import predict_price
 from fastapi.responses import FileResponse
-
+import pandas as pd
+from fastapi import Request
+import traceback
 
 
 app = FastAPI()
@@ -23,12 +25,6 @@ COMPANIES = ["TCS", "INFY", "RELIANCE"]
 @app.get("/")
 def home():
     return FileResponse("index.html")
-
-
-
-
-
-
 
 # 1. Companies list
 @app.get("/companies")
@@ -105,8 +101,27 @@ def compare(symbol1: str, symbol2: str):
         symbol2: float(df2['Close'].iloc[-1])
     }
 
-from fastapi import Request
-import traceback
+
+@app.get("/search")
+def search_stock(query: str):
+    try:
+        df = pd.read_csv("nse_stocks.csv")
+
+        # 🔥 CLEAN COLUMN NAMES (VERY IMPORTANT)
+        df.columns = df.columns.str.strip().str.replace('\ufeff', '')
+
+        print("Columns:", df.columns)  # debug
+
+        result = df[
+            df['Symbol'].str.contains(query.upper(), na=False) |
+            df['Name'].str.contains(query, case=False, na=False)
+        ]
+
+        return result.head(10).to_dict(orient="records")
+
+    except Exception as e:
+        print("SEARCH ERROR:", e)
+        return []
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
